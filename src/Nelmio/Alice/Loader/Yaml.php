@@ -57,6 +57,7 @@ class Yaml extends Base
         }
 
         $data = $this->processIncludes($data, $filename);
+        $data = $this->processParameters($data);
 
         return $data;
     }
@@ -77,6 +78,23 @@ class Yaml extends Base
         }
 
         unset($data['include']);
+
+        return $data;
+    }
+
+    /**
+     * @param $data
+     * @return mixed
+     */
+    private function processParameters($data)
+    {
+        if (isset($data['parameters'])) {
+            foreach ($data['parameters'] as $name => $value) {
+                $this->parameterBag->set($name, $value);
+            }
+        }
+
+        unset($data['parameters']);
 
         return $data;
     }
