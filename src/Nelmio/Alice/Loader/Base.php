@@ -11,6 +11,7 @@
 
 namespace Nelmio\Alice\Loader;
 
+use Nelmio\Alice\Fixtures\ParameterBag;
 use Psr\Log\LoggerInterface;
 use Nelmio\Alice\ORMInterface;
 use Nelmio\Alice\LoaderInterface;
@@ -81,28 +82,36 @@ class Base implements LoaderInterface
     protected $manager;
 
     /**
+     * @var \Nelmio\Alice\Fixtures\ParameterBag
+     */
+    protected $parameterBag;
+
+    /**
      * @var callable|LoggerInterface
      */
     private $logger;
 
     /**
-     * @param string $locale    default locale to use with faker if none is
-     *                          specified in the expression
-     * @param array  $providers custom faker providers in addition to the default
-     *                          ones from faker
-     * @param int    $seed      a seed to make sure faker generates data consistently across
-     *                          runs, set to null to disable
+     * @param string $locale     default locale to use with faker if none is
+     *                           specified in the expression
+     * @param array  $providers  custom faker providers in addition to the default
+     *                           ones from faker
+     * @param int    $seed       a seed  to make sure faker generates data consistently across
+     *                           runs, set to null to disable
+     * @param array  $parameters create loader with default parameters
      */
-    public function __construct($locale = 'en_US', array $providers = array(), $seed = 1)
+    public function __construct($locale = 'en_US', array $providers = array(), $seed = 1, array $parameters = array())
     {
         $this->objects         = new Collection;
         $this->typeHintChecker = new TypeHintChecker;
+        $this->parameterBag    = new ParameterBag($parameters);
 
         $allProviders = array_merge($this->getBuiltInProviders(), $providers);
 
         $this->processor = new Processor\Processor(
-            $this->getBuiltInProcessors($allProviders, $locale, $this->objects)
-            );
+            $this->getBuiltInProcessors($allProviders, $locale, $this->objects),
+            $this->parameterBag
+        );
 
         $this->builder = new Builder\Builder(
             $this->getBuiltInBuilders()
@@ -323,6 +332,14 @@ class Base implements LoaderInterface
     }
 
     /**
+     * @return ParameterBag
+     */
+    public function getParameterBag()
+    {
+        return $this->parameterBag;
+    }
+
+    /**
     * Logs a message using the logger.
     *
     * @param string $message
@@ -359,6 +376,7 @@ class Base implements LoaderInterface
         $this->fakerProcessorMethod = new Processor\Methods\Faker($objects, $providers, $locale);
 
         return array(
+            new Processor\Methods\Parameterized(),
             new Processor\Methods\ArrayValue(),
             new Processor\Methods\Conditional(),
             new Processor\Methods\UnescapeAt(),
